@@ -46,3 +46,5 @@ Thumbs.db
 # Env files (you’ll add real ones later)
 .env.local
 .env.*.local
+# ZCode editor state 
+.zcode/ 
