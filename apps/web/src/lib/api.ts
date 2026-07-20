@@ -11,7 +11,7 @@ import type {
  * `NEXT_PUBLIC_API_BASE_URL` env var; defaults to the local dev server.
  */
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+ const API_BASE_URL = "https://backend-jarvis-2bpk.onrender.com";
 
 const JSON_HEADERS = {
   "Content-Type": "application/json",
