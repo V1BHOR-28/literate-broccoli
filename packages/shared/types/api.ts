@@ -5,39 +5,40 @@ export interface Project {
   id: string;
   name: string;
   description: string | null;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Kpi {
   id: string;
-  project_id: string;
+  projectId: string;
   name: string;
-  target_value: number;
-  current_value: number;
+  targetValue: number;
+  currentValue: number;
   unit: string | null;
   frequency: KpiFrequency;
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
+  history?: KpiHistory[];
 }
 
 export interface KpiHistory {
   id: string;
-  kpi_id: string;
-  old_value: number;
-  new_value: number;
-  changed_by: string;
-  change_reason: string;
-  changed_at: string;
+  kpiId: string;
+  oldValue: number;
+  newValue: number;
+  changedBy: string;
+  changeReason: string;
+  changedAt: string;
 }
 
 export interface MemoryVector {
   id: string;
-  source_type: MemorySourceType;
-  source_id: string;
-  content_text: string;
+  sourceType: MemorySourceType;
+  sourceId: string;
+  contentText: string;
   embedding: number[];
-  created_at: string;
+  createdAt: string;
 }
 
 export interface CreateProjectRequest {
@@ -47,16 +48,16 @@ export interface CreateProjectRequest {
 
 export interface CreateKpiRequest {
   name: string;
-  target_value: number;
-  current_value: number;
+  targetValue: number;
+  currentValue: number;
   unit?: string;
   frequency: KpiFrequency;
 }
 
 export interface UpdateKpiValueRequest {
-  current_value: number;
-  changed_by: string;
-  change_reason: string;
+  currentValue: number;
+  changedBy: string;
+  changeReason: string;
 }
 
 export interface ApiRoutes {
