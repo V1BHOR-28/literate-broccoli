@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: ai_pm
+      POSTGRES_USER: ai_pm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-local-development-only}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./apps/api/models/init-pgvector.sql:/docker-entrypoint-initdb.d/00-enable-pgvector.sql:ro
+
+volumes:
+  postgres_data:
