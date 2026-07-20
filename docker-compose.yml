@@ -9,7 +9,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./apps/api/models/init-pgvector.sql:/docker-entrypoint-initdb.d/00-enable-pgvector.sql:ro
+      - ./apps/api/models/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
 
 volumes:
   postgres_data:
