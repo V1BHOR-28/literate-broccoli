@@ -15,6 +15,7 @@ from typing import Iterator
 
 from psycopg2.extras import RealDictCursor
 from psycopg2.pool import ThreadedConnectionPool
+from pgvector.psycopg2 import register_vector
 
 from config import settings
 
@@ -54,6 +55,7 @@ def get_conn() -> Iterator[object]:
         raise RuntimeError("Database pool is not initialised. Call init_pool() first.")
     conn = _pool.getconn()
     try:
+        register_vector(conn)
         yield conn
     finally:
         _pool.putconn(conn)

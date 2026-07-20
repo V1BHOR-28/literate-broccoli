@@ -31,6 +31,11 @@ class Settings:
     database_url: str
     cors_origins: tuple[str, ...]
     schema_path: str
+    gemini_api_key: str
+    embedding_model: str
+    chat_model: str
+    retrieval_top_k: int
+    memory_worker_poll_seconds: float
 
 
 def get_settings() -> Settings:
@@ -43,6 +48,11 @@ def get_settings() -> Settings:
         database_url=_get_database_url(),
         cors_origins=cors_origins,
         schema_path=os.path.join(os.path.dirname(__file__), "models", "schema.sql"),
+        gemini_api_key=os.getenv("GEMINI_API_KEY", ""),
+        embedding_model=os.getenv("GEMINI_EMBEDDING_MODEL", "models/text-embedding-004"),
+        chat_model=os.getenv("GEMINI_CHAT_MODEL", "gemini-1.5-flash"),
+        retrieval_top_k=int(os.getenv("MEMORY_RETRIEVAL_TOP_K", "8")),
+        memory_worker_poll_seconds=float(os.getenv("MEMORY_WORKER_POLL_SECONDS", "2")),
     )
 
 

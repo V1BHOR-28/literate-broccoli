@@ -17,6 +17,12 @@ from schemas import (
     Project,
 )
 from errors import NotFoundError
+from memory_service import (
+    build_kpi_history_text,
+    build_kpi_text,
+    build_project_text,
+    enqueue_embedding_job,
+)
 
 # Column lists kept in one place so INSERT and SELECT stay in sync.
 
@@ -84,7 +90,16 @@ def create_project(payload: CreateProjectRequest) -> Project:
             {"name": payload.name, "description": payload.description},
         )
         row = cur.fetchone()
-    return Project.model_validate(dict(row))
+        project = Project.model_validate(dict(row))
+        enqueue_embedding_job(
+            cur,
+            project_id=project.id,
+            source_type="project",
+            source_id=project.id,
+            kind="project",
+            content_text=build_project_text(name=project.name, description=project.description),
+        )
+    return project
 
 
 def project_exists(project_id: UUID) -> bool:
@@ -150,7 +165,22 @@ def create_kpi(project_id: UUID, payload: CreateKpiRequest) -> Kpi:
             },
         )
         row = cur.fetchone()
-    return Kpi.model_validate({**dict(row), "history": []})
+        cur.execute("SELECT name FROM projects WHERE id = %s;", (project_id,))
+        project_row = cur.fetchone()
+        kpi = Kpi.model_validate({**dict(row), "history": []})
+        enqueue_embedding_job(
+            cur,
+            project_id=project_id,
+            source_type="kpi",
+            source_id=kpi.id,
+            kind="kpi_definition",
+            content_text=build_kpi_text(
+                project_name=project_row["name"], name=kpi.name,
+                target_value=kpi.target_value, unit=kpi.unit, frequency=kpi.frequency,
+            ),
+            metadata={"kpi_id": str(kpi.id)},
+        )
+    return kpi
 
 
 def get_kpi(kpi_id: UUID) -> Kpi:
@@ -186,7 +216,10 @@ def update_kpi_value(
     with get_cursor(commit=True) as cur:
         # Lock + read old value so concurrent updaters cannot race the audit.
         cur.execute(
-            "SELECT current_value FROM kpis WHERE id = %s FOR UPDATE;",
+            """
+            SELECT id, project_id, name, unit, current_value
+            FROM kpis WHERE id = %s FOR UPDATE;
+            """,
             (kpi_id,),
         )
         current = cur.fetchone()
@@ -225,6 +258,22 @@ def update_kpi_value(
             },
         )
         history_row = cur.fetchone()
+        cur.execute("SELECT name FROM projects WHERE id = %s;", (kpi_row["project_id"],))
+        project_row = cur.fetchone()
+        enqueue_embedding_job(
+            cur,
+            project_id=kpi_row["project_id"],
+            source_type="kpi_history",
+            source_id=history_row["id"],
+            kind="kpi_change",
+            content_text=build_kpi_history_text(
+                project_name=project_row["name"], kpi_name=kpi_row["name"],
+                old_value=old_value, new_value=new_value, unit=kpi_row["unit"],
+                changed_by=changed_by, change_reason=change_reason,
+                changed_at=history_row["changed_at"],
+            ),
+            metadata={"kpi_id": str(kpi_id), "changed_by": changed_by},
+        )
 
     return Kpi.model_validate(
         {**dict(kpi_row), "history": [dict(history_row)]}

@@ -2,3 +2,7 @@ fastapi>=0.115,<1.0
 uvicorn[standard]>=0.32,<1.0
 psycopg2-binary>=2.9,<3.0
 pydantic>=2.10,<3.0
+langchain-core>=0.3,<1.0
+langchain-google-genai>=2.0,<3.0
+pgvector>=0.3,<0.5
+tenacity>=9.0,<10.0

@@ -10,6 +10,7 @@ Wires:
 from __future__ import annotations
 
 import logging
+from threading import Event, Thread
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
@@ -21,7 +22,9 @@ from db import close_pool, init_pool
 from errors import register_exception_handlers
 from routes.kpis import kpi_value_router, project_kpis_router
 from routes.projects import router as projects_router
+from routes.chat import router as chat_router
 from schema_bootstrap import apply_schema
+from workers.embedding_worker import run_embedding_worker
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -39,9 +42,24 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         close_pool()
         raise
     logger.info("Startup complete.")
+    worker_stop = Event()
+    worker: Thread | None = None
+    if settings.gemini_api_key:
+        worker = Thread(
+            target=run_embedding_worker,
+            args=(worker_stop,),
+            name="jarvis-embedding-worker",
+            daemon=True,
+        )
+        worker.start()
+    else:
+        logger.warning("Embedding worker not started: GEMINI_API_KEY is not configured.")
     try:
         yield
     finally:
+        worker_stop.set()
+        if worker is not None:
+            worker.join(timeout=10)
         logger.info("Closing database connection pool.")
         close_pool()
 
@@ -65,6 +83,7 @@ register_exception_handlers(app)
 app.include_router(projects_router)
 app.include_router(project_kpis_router)
 app.include_router(kpi_value_router)
+app.include_router(chat_router)
 
 
 @app.get("/health")

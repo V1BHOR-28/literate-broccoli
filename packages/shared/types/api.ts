@@ -1,5 +1,6 @@
 export type KpiFrequency = "daily" | "weekly" | "monthly";
-export type MemorySourceType = "project" | "kpi" | "chat";
+export type MemorySourceType = "project" | "kpi" | "kpi_history" | "chat" | "summary";
+export type ChatRole = "user" | "assistant" | "system";
 
 export interface Project {
   id: string;
@@ -60,10 +61,53 @@ export interface UpdateKpiValueRequest {
   changeReason: string;
 }
 
+export interface ChatCitation {
+  memoryId: string;
+  sourceType: MemorySourceType;
+  sourceId: string;
+  kind: string;
+  excerpt: string;
+}
+
+export interface LiveKpiSnapshot {
+  id: string;
+  name: string;
+  targetValue: number;
+  currentValue: number;
+  unit: string | null;
+  frequency: KpiFrequency;
+  updatedAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  sessionId: string;
+  projectId: string;
+  role: ChatRole;
+  contentText: string;
+  citations: ChatCitation[];
+  createdAt: string;
+}
+
+export interface ChatRequest {
+  message: string;
+  sessionId?: string;
+  user?: string;
+}
+
+export interface ChatResponse {
+  sessionId: string;
+  messageId: string;
+  answer: string;
+  citations: ChatCitation[];
+  liveKpis: LiveKpiSnapshot[];
+}
+
 export interface ApiRoutes {
   "GET /projects": { response: Project[] };
   "POST /projects": { body: CreateProjectRequest; response: Project };
   "GET /projects/{id}/kpis": { response: Kpi[] };
   "POST /projects/{id}/kpis": { body: CreateKpiRequest; response: Kpi };
   "PATCH /kpis/{id}/value": { body: UpdateKpiValueRequest; response: Kpi };
+  "POST /projects/{id}/chat": { body: ChatRequest; response: ChatResponse };
 }
