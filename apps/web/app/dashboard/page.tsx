@@ -92,16 +92,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (projects.length === 0) {
-    return (
-      <section className="mx-auto max-w-6xl">
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600">
-          No projects yet. Create one via <code>POST /projects</code> to get
-          started.
-        </div>
-      </section>
-    );
-  }
+  // Removed early return so user can see Manual Entry and Excel Import tabs when there are no projects
 
   return (
     <section className="mx-auto max-w-6xl">
@@ -147,7 +138,12 @@ export default function DashboardPage() {
       )}
 
       {activeTab === "dashboard" && (
-        <>
+        projects.length === 0 ? (
+          <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600">
+            No projects yet. Use the Manual Entry or Excel Import tabs above to get started.
+          </div>
+        ) : (
+          <>
           <div className="grid gap-4 md:grid-cols-2">
             {projects.map((project) => (
               <article
