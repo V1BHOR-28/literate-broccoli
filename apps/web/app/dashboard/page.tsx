@@ -1,271 +1,130 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { KpiHistoryChart } from "@/components/kpi-history-chart";
 import { Spinner } from "@/components/spinner";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
-import { ExcelUploader } from "@/components/excel-uploader";
 import { ManualEntryForm } from "@/components/manual-entry-form";
-import { bulkImportProjects } from "@/lib/api";
-import type { Kpi, BulkImportItem } from "@ai-pm/shared";
+import { ExcelUploader } from "@/components/excel-uploader";
+import { FolderKanban, Activity, UploadCloud, PlusCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
-  const { projects, kpis, loading, error, refresh, updateKpi } = useDashboardData();
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "manual" | "import">("dashboard");
-
-  const primaryProject = projects[0];
-  const projectKpis = useMemo(
-    () => (primaryProject ? kpis.filter((kpi) => kpi.projectId === primaryProject.id) : []),
-    [kpis, primaryProject]
-  );
-  const featuredKpi = projectKpis[0];
-
-  async function handleUpdate(kpi: Kpi) {
-    const valueInput = window.prompt(
-      `New value for "${kpi.name}"? (current: ${kpi.currentValue})`
-    );
-    if (valueInput === null) return;
-    const next = Number(valueInput);
-    if (!Number.isFinite(next)) {
-      window.alert("Please enter a numeric value.");
-      return;
-    }
-    const reason = window.prompt(`Reason for changing "${kpi.name}" to ${next}?`);
-    if (reason === null) return;
-    const trimmed = reason.trim();
-    if (trimmed === "") {
-      window.alert("A change reason is required.");
-      return;
-    }
-
-    setUpdatingId(kpi.id);
-    try {
-      await updateKpi(kpi.id, next, trimmed);
-    } catch (err) {
-      window.alert(
-        err instanceof Error ? err.message : "Failed to update KPI value."
-      );
-    } finally {
-      setUpdatingId(null);
-    }
-  }
-
-  const handleImport = async (items: BulkImportItem[]) => {
-    try {
-      const res = await bulkImportProjects({ items });
-      alert(`Successfully imported ${res.importedCount} items.`);
-      refresh();
-      setActiveTab("dashboard");
-    } catch (err) {
-      alert("Import failed: " + (err instanceof Error ? err.message : String(err)));
-    }
-  };
-
-  if (loading) {
-    return <DashboardSkeleton />;
-  }
-
-  if (error) {
-    return (
-      <section className="mx-auto max-w-6xl">
-        <div
-          role="alert"
-          className="rounded-xl border border-indigo-200 bg-indigo-50 p-6 text-sm text-indigo-900"
-        >
-          <p className="font-semibold">Couldn't load the dashboard.</p>
-          <p className="mt-1 text-indigo-700">{error}</p>
-          <button
-            type="button"
-            onClick={refresh}
-            className="mt-4 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
-          >
-            Retry
-          </button>
-        </div>
-      </section>
-    );
-  }
+  const { projects, loading, error, refresh } = useDashboardData();
+  const [activeTab, setActiveTab] = useState<"manual" | "import">("manual");
 
   return (
-    <section className="mx-auto max-w-6xl">
-      <div className="mb-8 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-sm font-medium text-indigo-600">Portfolio overview</p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Dashboard
-          </h1>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab("dashboard")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-              activeTab === "dashboard"
-                ? "bg-indigo-100 text-indigo-700"
-                : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab("manual")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-              activeTab === "manual"
-                ? "bg-indigo-100 text-indigo-700"
-                : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            + Manual Entry
-          </button>
-          <button
-            onClick={() => setActiveTab("import")}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-              activeTab === "import"
-                ? "bg-indigo-100 text-indigo-700"
-                : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            📥 Excel Import
-          </button>
-        </div>
-      </div>
-
-      {activeTab === "manual" && (
-        <div className="mb-8">
-          <ManualEntryForm
-            projects={projects}
-            onCreated={() => {
-              refresh();
-              setActiveTab("dashboard");
-            }}
-          />
-        </div>
-      )}
-
-      {activeTab === "import" && (
-        <div className="mb-8">
-          <ExcelUploader onImport={handleImport} />
-        </div>
-      )}
-
-      {activeTab === "dashboard" && projects.length === 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600">
-          No projects yet. Use the Manual Entry or Excel Import tabs above to get started.
-        </div>
-      )}
-
-      {activeTab === "dashboard" && projects.length > 0 && (
-        <>
-          <div className="grid gap-4 md:grid-cols-2">
-            {projects.map((project) => (
-              <article
-                key={project.id}
-                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <h2 className="font-semibold text-slate-900">{project.name}</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {project.description}
-                </p>
-              </article>
-            ))}
+    <div className="min-h-screen flex flex-col">
+      {/* Top Navigation */}
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-primary/20 rounded-lg">
+              <FolderKanban className="w-6 h-6 text-primary" />
+            </div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              Signalboard
+            </h1>
           </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-mutedForeground">v0.4 Beta</span>
+          </div>
+        </div>
+      </header>
 
-          <div className="mt-8 grid gap-6 lg:grid-cols-3">
-            <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-              <div className="mb-5">
-                <p className="text-sm font-medium text-indigo-600">
-                  {primaryProject.name}
-                </p>
-                <h2 className="text-xl font-bold text-slate-900">
-                  {featuredKpi ? featuredKpi.name : "No KPIs yet"}
-                </h2>
-              </div>
-              {featuredKpi ? (
-                <KpiHistoryChart data={featuredKpi.history ?? []} />
-              ) : (
-                <p className="text-sm text-slate-500">
-                  Add a KPI to see its history chart here.
-                </p>
+      {/* Main Content Area */}
+      <main className="flex-1 container mx-auto p-4 md:p-8 animate-fade-in">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight mb-1">Dashboard</h2>
+            <p className="text-mutedForeground">Monitor your AI projects and KPIs in real-time.</p>
+          </div>
+          
+          {/* Animated Tabs */}
+          <div className="inline-flex items-center justify-center p-1 bg-card border border-border/50 rounded-xl shadow-sm backdrop-blur-sm">
+            <button
+              onClick={() => setActiveTab("manual")}
+              className={cn(
+                "inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition-all rounded-lg",
+                activeTab === "manual" 
+                  ? "bg-primary text-white shadow-md" 
+                  : "text-mutedForeground hover:text-foreground hover:bg-muted/50"
               )}
-            </section>
-            <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="font-semibold text-slate-900">Current KPIs</h2>
-              <div className="mt-4 space-y-4">
-                {projectKpis.length === 0 ? (
-                  <p className="text-sm text-slate-500">
-                    No KPIs for {primaryProject.name} yet.
-                  </p>
+            >
+              <PlusCircle className="w-4 h-4" />
+              Manual Entry
+            </button>
+            <button
+              onClick={() => setActiveTab("import")}
+              className={cn(
+                "inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium transition-all rounded-lg",
+                activeTab === "import" 
+                  ? "bg-primary text-white shadow-md" 
+                  : "text-mutedForeground hover:text-foreground hover:bg-muted/50"
+              )}
+            >
+              <UploadCloud className="w-4 h-4" />
+              Import Data
+            </button>
+          </div>
+        </div>
+
+        {/* Input Section - Glassmorphic Card */}
+        <div className="bg-card/50 backdrop-blur-md border border-border/50 rounded-2xl p-6 shadow-xl shadow-black/5 mb-10 animate-slide-up">
+          {activeTab === "manual" ? (
+            <ManualEntryForm onCreated={refresh} projects={projects} />
+          ) : (
+            <ExcelUploader onUploadComplete={refresh} />
+          )}
+        </div>
+
+        {/* Projects Section */}
+        <div className="mb-6">
+          <h3 className="text-2xl font-semibold flex items-center gap-2 mb-6">
+            <Activity className="text-primary w-6 h-6" />
+            Active Projects
+          </h3>
+
+          {error && (
+            <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl">
+              Failed to load projects: {error}
+            </div>
+          )}
+          {loading && <Spinner />}
+          {!loading && !error && projects.length === 0 && (
+            <div className="text-center p-12 bg-card/30 rounded-2xl border border-dashed border-border text-mutedForeground">
+              <FolderKanban className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No projects found. Create one above to get started.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Projects Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          {projects.map((p) => (
+            <div 
+              key={p.id} 
+              className="group bg-card/60 backdrop-blur-sm border border-border/50 rounded-2xl overflow-hidden shadow-lg shadow-black/5 hover:border-primary/50 hover:shadow-primary/5 transition-all duration-300"
+            >
+              <div className="p-6 border-b border-border/30 bg-card/40">
+                <h3 className="text-xl font-bold group-hover:text-primary transition-colors">{p.name}</h3>
+                <p className="text-mutedForeground text-sm mt-1">{p.description || "No description"}</p>
+              </div>
+              <div className="p-6">
+                {p.kpis?.length ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {p.kpis.map((kpi) => (
+                      <KpiHistoryChart key={kpi.id} kpi={kpi} onValueUpdated={refresh} />
+                    ))}
+                  </div>
                 ) : (
-                  projectKpis.map((kpi) => (
-                    <KpiRow
-                      key={kpi.id}
-                      kpi={kpi}
-                      saving={updatingId === kpi.id}
-                      onUpdate={() => void handleUpdate(kpi)}
-                    />
-                  ))
+                  <p className="text-sm text-mutedForeground/70 italic text-center py-4">No KPIs tracked yet.</p>
                 )}
               </div>
-            </section>
-          </div>
-        </>
-      )}
-    </section>
-  );
-}
-
-interface KpiRowProps {
-  kpi: Kpi;
-  saving: boolean;
-  onUpdate: () => void;
-}
-
-function KpiRow({ kpi, saving, onUpdate }: KpiRowProps) {
-  return (
-    <div className="border-b border-slate-100 pb-4 last:border-0">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm text-slate-600">{kpi.name}</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900">
-            {kpi.currentValue} {kpi.unit}
-          </p>
-          <p className="text-xs text-slate-500">
-            Target: {kpi.targetValue} {kpi.unit}
-          </p>
+            </div>
+          ))}
         </div>
-        <button
-          type="button"
-          disabled={saving}
-          onClick={onUpdate}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saving && <Spinner className="h-3.5 w-3.5" />}
-          {saving ? "Saving..." : "Update value"}
-        </button>
-      </div>
+      </main>
     </div>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <section className="mx-auto max-w-6xl">
-      <div className="mb-8 space-y-2">
-        <div className="h-4 w-32 animate-pulse rounded bg-slate-200" />
-        <div className="h-8 w-40 animate-pulse rounded bg-slate-200" />
-      </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        {[0, 1].map((i) => (
-          <div
-            key={i}
-            className="h-28 animate-pulse rounded-xl border border-slate-200 bg-white p-5"
-          />
-        ))}
-      </div>
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        <div className="h-80 animate-pulse rounded-xl border border-slate-200 bg-white lg:col-span-2" />
-        <div className="h-80 animate-pulse rounded-xl border border-slate-200 bg-white" />
-      </div>
-    </section>
   );
 }

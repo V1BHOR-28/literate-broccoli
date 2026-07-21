@@ -2,12 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  box-sizing: border-box;
+@layer base {
+  body {
+    @apply bg-background text-foreground antialiased min-h-screen selection:bg-primary/30;
+    /* Subtle radial gradient for depth */
+    background-image: radial-gradient(
+      circle at 50% 0%,
+      rgba(59, 130, 246, 0.1) 0%,
+      transparent 70%
+    );
+  }
 }
 
-body {
-  margin: 0;
-  background: #f8fafc;
-  color: #0f172a;
+/* Modern scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }
