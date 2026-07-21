@@ -32,7 +32,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Jarvis PM API", version="0.3.0", lifespan=lifespan)
 
 # CORS Configuration: Allow origins from env or default to *
-allow_origins_env = os.getenv("CORS_ORIGINS", "*")
+allow_origins_env = os.getenv("CORS_ORIGINS", "*").strip('"').strip("'")
 allow_origins = [o.strip() for o in allow_origins_env.split(",")] if allow_origins_env != "*" else ["*"]
 
 app.add_middleware(
