@@ -49,6 +49,10 @@ app.include_router(project_kpis_router)
 app.include_router(kpi_value_router)
 app.include_router(chat_router)
 
+@app.get("/")
+def read_root() -> dict[str, str]:
+    return {"message": "Jarvis PM API is running. Access /docs for documentation."}
+
 @app.get("/health")
 def health_check() -> dict[str, str]:
     return {"status": "ok"}
