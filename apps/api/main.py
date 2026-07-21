@@ -12,6 +12,10 @@ from routes.projects import router as projects_router
 from routes.kpis import project_kpis_router, kpi_value_router
 from routes.chat import router as chat_router
 
+import traceback
+from fastapi.responses import JSONResponse
+from fastapi import Request
+
 logging.basicConfig(level=logging.INFO)
 
 @asynccontextmanager
@@ -30,6 +34,13 @@ async def lifespan(app: FastAPI):
     close_pool()
 
 app = FastAPI(title="Jarvis PM API", version="0.3.0", lifespan=lifespan)
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content={"message": str(exc), "traceback": traceback.format_exc()},
+    )
 
 # CORS Configuration: Allow origins from env or default to *
 allow_origins = ["*"]
