@@ -12,6 +12,7 @@ from db import get_cursor
 from schemas import (
     CreateKpiRequest,
     CreateProjectRequest,
+    BulkImportItem,
     Kpi,
     KpiHistory,
     Project,
@@ -110,6 +111,71 @@ def project_exists(project_id: UUID) -> bool:
             (project_id,),
         )
         return cur.fetchone() is not None
+
+
+def bulk_import(items: list[BulkImportItem]) -> int:
+    """Import a list of KPIs (and their projects if missing)."""
+    if not items:
+        return 0
+    with get_cursor(commit=True) as cur:
+        count = 0
+        for item in items:
+            # 1. Get or create project by name
+            cur.execute("SELECT id, name FROM projects WHERE name = %s;", (item.project_name,))
+            project_row = cur.fetchone()
+            if not project_row:
+                cur.execute(
+                    """
+                    INSERT INTO projects (name, description)
+                    VALUES (%(name)s, %(description)s)
+                    RETURNING id, name;
+                    """,
+                    {"name": item.project_name, "description": item.project_description},
+                )
+                project_row = cur.fetchone()
+                enqueue_embedding_job(
+                    cur,
+                    project_id=project_row["id"],
+                    source_type="project",
+                    source_id=project_row["id"],
+                    kind="project",
+                    content_text=build_project_text(name=item.project_name, description=item.project_description),
+                )
+            
+            # 2. Insert KPI
+            cur.execute(
+                """
+                INSERT INTO kpis
+                    (project_id, name, target_value, current_value, unit, frequency)
+                VALUES
+                    (%(project_id)s, %(name)s, %(target_value)s,
+                     %(current_value)s, %(unit)s, %(frequency)s)
+                RETURNING id;
+                """,
+                {
+                    "project_id": project_row["id"],
+                    "name": item.kpi_name,
+                    "target_value": item.target_value,
+                    "current_value": item.current_value,
+                    "unit": item.unit,
+                    "frequency": item.frequency,
+                },
+            )
+            kpi_row = cur.fetchone()
+            enqueue_embedding_job(
+                cur,
+                project_id=project_row["id"],
+                source_type="kpi",
+                source_id=kpi_row["id"],
+                kind="kpi_definition",
+                content_text=build_kpi_text(
+                    project_name=project_row["name"], name=item.kpi_name,
+                    target_value=item.target_value, unit=item.unit, frequency=item.frequency,
+                ),
+                metadata={"kpi_id": str(kpi_row["id"])},
+            )
+            count += 1
+        return count
 
 
 # --- KPIs -------------------------------------------------------------------

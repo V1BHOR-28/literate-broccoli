@@ -5,12 +5,16 @@ import { useMemo, useState } from "react";
 import { KpiHistoryChart } from "@/components/kpi-history-chart";
 import { Spinner } from "@/components/spinner";
 import { useDashboardData } from "@/hooks/use-dashboard-data";
-import type { Kpi } from "@ai-pm/shared";
+import { ExcelUploader } from "@/components/excel-uploader";
+import { ManualEntryForm } from "@/components/manual-entry-form";
+import { bulkImportProjects } from "@/lib/api";
+import type { Kpi, BulkImportItem } from "@ai-pm/shared";
 
 export default function DashboardPage() {
   const { projects, kpis, loading, error, refresh, updateKpi } =
     useDashboardData();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"dashboard" | "manual" | "import">("dashboard");
 
   const primaryProject = projects[0];
   const projectKpis = useMemo(
@@ -51,6 +55,17 @@ export default function DashboardPage() {
       setUpdatingId(null);
     }
   }
+
+  const handleImport = async (items: BulkImportItem[]) => {
+    try {
+      const res = await bulkImportProjects({ items });
+      alert(`Successfully imported ${res.importedCount} items.`);
+      refresh();
+      setActiveTab("dashboard");
+    } catch (err) {
+      alert("Import failed: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -97,24 +112,55 @@ export default function DashboardPage() {
             Dashboard
           </h1>
         </div>
-        <p className="text-sm text-slate-500">
-          Every KPI movement retains its author and reason.
-        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setActiveTab("dashboard")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium ${activeTab === "dashboard" ? "bg-indigo-100 text-indigo-700" : "text-slate-600 hover:bg-slate-100"}`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab("manual")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium ${activeTab === "manual" ? "bg-indigo-100 text-indigo-700" : "text-slate-600 hover:bg-slate-100"}`}
+          >
+            + Manual Entry
+          </button>
+          <button
+            onClick={() => setActiveTab("import")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium ${activeTab === "import" ? "bg-indigo-100 text-indigo-700" : "text-slate-600 hover:bg-slate-100"}`}
+          >
+            📥 Excel Import
+          </button>
+        </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {projects.map((project) => (
-          <article
-            key={project.id}
-            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-          >
-            <h2 className="font-semibold text-slate-900">{project.name}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              {project.description}
-            </p>
-          </article>
-        ))}
-      </div>
+      {activeTab === "manual" && (
+        <div className="mb-8">
+          <ManualEntryForm projects={projects} onCreated={() => { refresh(); setActiveTab("dashboard"); }} />
+        </div>
+      )}
+
+      {activeTab === "import" && (
+        <div className="mb-8">
+          <ExcelUploader onImport={handleImport} />
+        </div>
+      )}
+
+      {activeTab === "dashboard" && (
+        <>
+          <div className="grid gap-4 md:grid-cols-2">
+            {projects.map((project) => (
+              <article
+                key={project.id}
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+              >
+                <h2 className="font-semibold text-slate-900">{project.name}</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {project.description}
+                </p>
+              </article>
+            ))}
+          </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
@@ -154,6 +200,8 @@ export default function DashboardPage() {
           </div>
         </section>
       </div>
+      </>
+      )}
     </section>
   );
 }

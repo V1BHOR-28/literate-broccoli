@@ -168,3 +168,17 @@ class ChatResponse(CamelModel):
     answer: str
     citations: list[ChatCitation] = Field(default_factory=list)
     live_kpis: list[LiveKpiSnapshot] = Field(default_factory=list)
+
+
+class BulkImportItem(CamelModel):
+    project_name: str
+    project_description: Optional[str] = None
+    kpi_name: str
+    target_value: float
+    current_value: float
+    unit: Optional[str] = None
+    frequency: KpiFrequency
+
+
+class BulkImportRequest(CamelModel):
+    items: list[BulkImportItem]

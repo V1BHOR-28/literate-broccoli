@@ -1,6 +1,7 @@
 import type {
   CreateKpiRequest,
   CreateProjectRequest,
+  BulkImportRequest,
   Kpi,
   Project,
   UpdateKpiValueRequest
@@ -93,4 +94,16 @@ export async function updateKpiValue(
   );
   await assertOk(res);
   return (await res.json()) as Kpi;
+}
+
+export async function bulkImportProjects(
+  body: BulkImportRequest
+): Promise<{ importedCount: number }> {
+  const res = await fetch(`${API_BASE_URL}/projects/bulk-import`, {
+    method: "POST",
+    headers: { ...JSON_HEADERS, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  await assertOk(res);
+  return (await res.json()) as { importedCount: number };
 }

@@ -103,9 +103,24 @@ export interface ChatResponse {
   liveKpis: LiveKpiSnapshot[];
 }
 
+export interface BulkImportItem {
+  projectName: string;
+  projectDescription?: string;
+  kpiName: string;
+  targetValue: number;
+  currentValue: number;
+  unit?: string;
+  frequency: KpiFrequency;
+}
+
+export interface BulkImportRequest {
+  items: BulkImportItem[];
+}
+
 export interface ApiRoutes {
   "GET /projects": { response: Project[] };
   "POST /projects": { body: CreateProjectRequest; response: Project };
+  "POST /projects/bulk-import": { body: BulkImportRequest; response: { importedCount: number } };
   "GET /projects/{id}/kpis": { response: Kpi[] };
   "POST /projects/{id}/kpis": { body: CreateKpiRequest; response: Kpi };
   "PATCH /kpis/{id}/value": { body: UpdateKpiValueRequest; response: Kpi };

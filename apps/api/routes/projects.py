@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, status
 
-from repositories import create_project, list_projects
-from schemas import CreateProjectRequest, Project
+from repositories import create_project, list_projects, bulk_import
+from schemas import CreateProjectRequest, Project, BulkImportRequest
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -28,3 +28,13 @@ def get_projects() -> list[Project]:
 def post_projects(payload: CreateProjectRequest) -> Project:
     """Create a new project."""
     return create_project(payload)
+
+
+@router.post(
+    "/bulk-import",
+    status_code=status.HTTP_200_OK,
+)
+def post_bulk_import(payload: BulkImportRequest) -> dict[str, int]:
+    """Bulk import projects and KPIs from Excel data."""
+    count = bulk_import(payload.items)
+    return {"importedCount": count}
