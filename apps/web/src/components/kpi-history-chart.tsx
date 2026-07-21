@@ -11,7 +11,7 @@ export function KpiHistoryChart({ kpi, onValueUpdated }: { kpi: Kpi; onValueUpda
   const [editing, setEditing] = useState(false);
 
   // Format data for Recharts (oldest first)
-  const data = [...kpi.history].reverse().map((h) => ({
+  const data = [...(kpi.history || [])].reverse().map((h) => ({
     time: new Date(h.changedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
     value: h.newValue
   }));
