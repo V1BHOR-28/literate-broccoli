@@ -10,7 +10,7 @@ import { FolderKanban, Activity, UploadCloud, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
-  const { projects, loading, error, refresh } = useDashboardData();
+  const { projects, kpis, loading, error, refresh } = useDashboardData();
   const [activeTab, setActiveTab] = useState<"manual" | "import">("manual");
 
   return (
@@ -111,9 +111,9 @@ export default function DashboardPage() {
                 <p className="text-mutedForeground text-sm mt-1">{p.description || "No description"}</p>
               </div>
               <div className="p-6">
-                {p.kpis?.length ? (
+                {kpis.filter(k => k.projectId === p.id).length ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {p.kpis.map((kpi) => (
+                    {kpis.filter(k => k.projectId === p.id).map((kpi) => (
                       <KpiHistoryChart key={kpi.id} kpi={kpi} onValueUpdated={refresh} />
                     ))}
                   </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Plus, Target, CheckCircle2 } from "lucide-react";
-import type { Project } from "@shared/types/api";
+import type { Project } from "@ai-pm/shared";
 
 export function ManualEntryForm({
   onCreated,

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import type { Kpi } from "@shared/types/api";
+import type { Kpi } from "@ai-pm/shared";
 
 export function KpiHistoryChart({ kpi, onValueUpdated }: { kpi: Kpi; onValueUpdated: () => void }) {
   const [newValue, setNewValue] = useState("");
