@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: pm-ai-backend
+    env: python
+    buildCommand: cd apps/api && pip install -r requirements.txt
+    startCommand: cd apps/api && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_SQ7RwkWpTMZ3@ep-green-river-avvxlmpb.c-11.us-east-1.aws.neon.tech/neondb?sslmode=require
+      - key: CORS_ORIGINS
+        value: "*"

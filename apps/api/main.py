@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import os
 
 from db import init_pool, close_pool
 from schema_bootstrap import apply_schema
@@ -30,10 +31,13 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Jarvis PM API", version="0.3.0", lifespan=lifespan)
 
-# CORS FIX: Allow all origins for deployment
+# CORS Configuration: Allow origins from env or default to *
+allow_origins_env = os.getenv("CORS_ORIGINS", "*")
+allow_origins = [o.strip() for o in allow_origins_env.split(",")] if allow_origins_env != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allow_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,5 +50,5 @@ app.include_router(kpi_value_router)
 app.include_router(chat_router)
 
 @app.get("/health")
-def health_check():
+def health_check() -> dict[str, str]:
     return {"status": "ok"}

@@ -6,7 +6,7 @@ import type {
   UpdateKpiValueRequest
 } from "@ai-pm/shared";
 
-const API_BASE_URL = "https://backend-jarvis-2bpk.onrender.com";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
 
 const JSON_HEADERS = {
   Accept: "application/json"
@@ -15,10 +15,16 @@ const JSON_HEADERS = {
 async function assertOk(response: Response): Promise<void> {
   if (response.ok) return;
   let detail = "";
+  const clone = response.clone();
   try {
-    detail = await response.text();
+    const data = await clone.json();
+    detail = data.detail ? (typeof data.detail === 'string' ? data.detail : JSON.stringify(data.detail)) : JSON.stringify(data);
   } catch {
-    detail = "";
+    try {
+      detail = await response.text();
+    } catch {
+      detail = "";
+    }
   }
   const trimmed = detail.trim();
   const message = trimmed

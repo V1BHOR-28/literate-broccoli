@@ -48,3 +48,4 @@ Thumbs.db
 .env.*.local
 # ZCode editor state 
 .zcode/ 
+.vercel
